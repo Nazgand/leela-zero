@@ -73,6 +73,9 @@ static void parse_commandline(int argc, char *argv[]) {
         ("resignpct,r", po::value<int>()->default_value(cfg_resignpct),
                         "Resign when winrate is less than x%.\n"
                         "-1 uses 10% but scales for handicap.")
+        ("resignbeta", po::value<float>()->default_value(cfg_resignbeta),
+                        "Resigning requires beta to be larger than this. "
+                        "Larger beta means the network is more certain of the score.")
         ("weights,w", po::value<std::string>(), "File with network weights.")
         ("logfile,l", po::value<std::string>(), "File to log input/output to.")
         ("quiet,q", "Disable all diagnostic output.")
@@ -274,6 +277,10 @@ static void parse_commandline(int argc, char *argv[]) {
 
     if (vm.count("resignpct")) {
         cfg_resignpct = vm["resignpct"].as<int>();
+    }
+
+    if (vm.count("resignbeta")) {
+        cfg_resignbeta = vm["resignbeta"].as<float>();
     }
 
     if (vm.count("randomcnt")) {

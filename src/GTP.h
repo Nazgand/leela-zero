@@ -38,6 +38,7 @@ extern int cfg_max_visits;
 extern TimeManagement::enabled_t cfg_timemanage;
 extern int cfg_lagbuffer_cs;
 extern int cfg_resignpct;
+extern float cfg_resignbeta;
 extern int cfg_noise;
 extern bool cfg_fpuzero;
 extern float cfg_noise_value;

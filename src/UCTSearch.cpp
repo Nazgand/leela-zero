@@ -365,6 +365,11 @@ bool UCTSearch::should_resign(passflag_t passflag, float bestscore) {
         return false;
     }
 
+    if (m_root->get_net_beta() < cfg_resignbeta) {
+        // network not sure enough of score
+        return false;
+    }
+
     if ((m_rootstate.get_handicap() > 0)
             && (color == FastBoard::WHITE)
             && is_default_cfg_resign) {
