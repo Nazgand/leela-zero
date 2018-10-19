@@ -89,24 +89,31 @@ bool Game::eatNewLine() {
 }
 
 bool Game::sendGtpCommand(QString cmd) {
+    QString response = sendGtpCommandForResponse(cmd);
+    if (response.startsWith("= ")) {
+        return true;
+    }
+    return false;
+}
+
+QString Game::sendGtpCommandForResponse(QString cmd) {
     write(qPrintable(cmd.append("\n")));
     waitForBytesWritten(-1);
     if (!waitReady()) {
         error(Game::PROCESS_DIED);
-        return false;
+        return "PROCESS_DIED";
     }
     char readBuffer[256];
     int readCount = readLine(readBuffer, 256);
     if (readCount <= 0 || readBuffer[0] != '=') {
         QTextStream(stdout) << "GTP: " << readBuffer << endl;
         error(Game::WRONG_GTP);
-        return false;
     }
     if (!eatNewLine()) {
         error(Game::PROCESS_DIED);
-        return false;
     }
-    return true;
+    QString response = readBuffer;
+    return response.simplified();
 }
 
 void Game::checkVersion(const VersionTuple &min_version) {
@@ -227,9 +234,6 @@ bool Game::readMove() {
         error(Game::PROCESS_DIED);
         return false;
     }
-    if (readCount == 0) {
-        error(Game::WRONG_GTP);
-    }
     QTextStream(stdout) << m_moveNum << " (";
     QTextStream(stdout) << (m_blackToMove ? "B " : "W ") << m_moveDone << ") ";
     QTextStream(stdout).flush();
@@ -313,6 +317,26 @@ bool Game::getScore() {
     }
     QTextStream(stdout) << "Winner: " << m_winner << endl;
     return true;
+}
+
+float Game::getScoreEstimateMean() {
+    bool parse;
+    float mean = sendGtpCommandForResponse("estimate_score_mean").remove(0,2).toFloat(&parse);
+    if (!parse) {
+        // a parsing error implies (mean == 0.0)
+        error(Game::WRONG_GTP);
+    }
+    return mean;
+}
+
+float Game::getScoreEstimateStandardDeviation() {
+    bool parse;
+    float standard = sendGtpCommandForResponse("estimate_score_standard_deviation").remove(0,2).toFloat(&parse);
+    if (!parse) {
+        // a parsing error implies (standard == 0.0)
+        error(Game::WRONG_GTP);
+    }
+    return mean;
 }
 
 int Game::getWinner() {
