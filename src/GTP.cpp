@@ -150,7 +150,8 @@ const std::string GTP::s_commands[] = {
     "showboard",
     "undo",
     "final_score",
-    "estimate_score",
+    "estimate_score_mean",
+    "estimate_score_standard_deviation",
     "final_status_list",
     "time_settings",
     "time_left",
@@ -455,14 +456,19 @@ bool GTP::execute(GameState & game, std::string xinput) {
             gtp_printf(id, "0");
         }
         return true;
-    } else if (command.find("estimate_score") == 0) {
-        const float piOverSqrt3 = 1.8137993642342178505940782576421557322840662480927405755698849353881231811;
+    } else if (command.find("estimate_score_mean") == 0) {
         int color = game.get_to_move();
         float alpkt, beta, pi, avg_eval, eval_bonus;
         std::tie(alpkt, beta, pi, avg_eval, eval_bonus) = game.get_eval();
 
-        gtp_printf(id, "Black - White: %3.1f", alpkt * (color == FastBoard::BLACK ? 1.0 : -1.0));
-        gtp_printf(id, "Standard Deviation: %3.1f", piOverSqrt3/beta);
+        gtp_printf(id, "%3.1f", alpkt * (color == FastBoard::BLACK ? 1.0 : -1.0));
+        return true;
+    } else if (command.find("estimate_score_standard_deviation") == 0) {
+        const float piOverSqrt3 = 1.8137993642342178505940782576421557322840662480927405755698849353881231811;
+        float alpkt, beta, pi, avg_eval, eval_bonus;
+        std::tie(alpkt, beta, pi, avg_eval, eval_bonus) = game.get_eval();
+
+        gtp_printf(id, "%3.1f", piOverSqrt3/beta);
         return true;
     } else if (command.find("final_status_list") == 0) {
         if (command.find("alive") != std::string::npos) {
