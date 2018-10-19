@@ -336,7 +336,7 @@ float Game::getScoreEstimateStandardDeviation() {
         // a parsing error implies (standard == 0.0)
         error(Game::WRONG_GTP);
     }
-    return mean;
+    return standard;
 }
 
 int Game::getWinner() {

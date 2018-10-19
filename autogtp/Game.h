@@ -39,6 +39,9 @@ public:
     bool readMove();
     bool nextMove();
     bool getScore();
+    float getScoreEstimateMean();
+    float getScoreEstimateStandardDeviation();
+    QString sendGtpCommandForResponse(QString cmd);
     bool loadSgf(const QString &fileName);
     bool loadSgf(const QString &fileName, int moves);
     bool writeSgf();
