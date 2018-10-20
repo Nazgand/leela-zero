@@ -17,6 +17,7 @@
     along with Leela Zero.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <cmath>
 #include <QUuid>
 #include <QFile>
 #include <QTextStream>
@@ -28,6 +29,7 @@ Game::Game(const QString& weights, const QString& opt, const QString& binary) :
     m_cmdLine(""),
     m_binary(binary),
     m_timeSettings("time_settings 0 1 0"),
+    m_scoreEarly(false),
     m_resignation(false),
     m_blackToMove(true),
     m_blackResigned(false),
@@ -278,36 +280,40 @@ bool Game::nextMove() {
     return true;
 }
 
-bool Game::getScore() {
+bool Game::getScore(bool scoreEarly) {
     if (m_resignation) {
         if (m_blackResigned) {
             m_winner = QString(QStringLiteral("white"));
-            m_result = "W+Resign ";
+            m_result = "W+Resign : 0.000";
             QTextStream(stdout) << "Score: " << m_result << endl;
         } else {
             m_winner = QString(QStringLiteral("black"));
-            m_result = "B+Resign ";
+            m_result = "B+Resign : 1.000";
             QTextStream(stdout) << "Score: " << m_result << endl;
         }
-    } else{
-        write("final_score\n");
-        waitForBytesWritten(-1);
-        if (!waitReady()) {
-            error(Game::PROCESS_DIED);
-            return false;
+    } else if (scoreEarly) {
+        m_scoreEarly = true;
+        m_winner = QString(QStringLiteral("early"));
+        const float mean = getScoreEstimateMean();
+        const float stdDev = getScoreEstimateStandardDeviation();
+        const float piOverSqrt3 = 1.8137993642342178505940782576421557322840662480927405755698849353881231811;
+        const float winRate = 1.0f/(1.0f+std::exp(-mean*piOverSqrt3/stdDev));
+        m_result = "0";
+        if (mean != 0.0) {
+            m_result = (mean > 0 ? "B+" : "W+") + QString().setNum(abs(mean), 'f', 3);
         }
-        char readBuffer[256];
-        readLine(readBuffer, 256);
-        m_result = readBuffer;
-        m_result.remove(0, 2);
-        if (readBuffer[2] == 'W') {
+        m_result += " : " +  QString().setNum(winRate, 'f', 3);
+    } else {
+        m_result = sendGtpCommandForResponse("final_score").remove(0,2).trimmed();
+        if (m_result[0] == 'W') {
             m_winner = QString(QStringLiteral("white"));
-        } else if (readBuffer[2] == 'B') {
+            m_result += " : 0.000";
+        } else if (m_result[0] == 'B') {
             m_winner = QString(QStringLiteral("black"));
-        }
-        if (!eatNewLine()) {
-            error(Game::PROCESS_DIED);
-            return false;
+            m_result += " : 1.000";
+        } else if (m_result[0] == '0') {
+            m_winner = QString(QStringLiteral("panda"));
+            m_result += " : 0.500";
         }
         QTextStream(stdout) << "Score: " << m_result;
     }
@@ -342,8 +348,12 @@ float Game::getScoreEstimateStandardDeviation() {
 int Game::getWinner() {
     if (m_winner.compare(QStringLiteral("white"), Qt::CaseInsensitive) == 0)
         return Game::WHITE;
-    else
+    else if (m_winner.compare(QStringLiteral("black"), Qt::CaseInsensitive) == 0)
         return Game::BLACK;
+    else if (m_winner.compare(QStringLiteral("panda"), Qt::CaseInsensitive) == 0)
+        return Game::PANDA;
+    else
+        return Game::EARLY;
 }
 
 bool Game::writeSgf() {
@@ -406,6 +416,15 @@ bool Game::fixSgf(QString& weightFile, bool resignation) {
         QRegularExpression lastpass(";W\\[tt\\]\\)");
         QString noPass(")");
         sgfData.replace(lastpass, noPass);
+    } else if (m_scoreEarly) {
+        const float mean = getScoreEstimateMean();
+        QRegularExpression oldResult("RE\\[.*\\]");
+        QString newResult("RE[0] ");
+        if (mean != 0.0) {
+            newResult = "RE[";
+            newResult += (mean > 0 ? "B+" : "W+") + QString().setNum(abs(mean), 'f', 3) + "] ";
+        }
+        sgfData.replace(oldResult, newResult);
     }
 
     sgfFile.close();

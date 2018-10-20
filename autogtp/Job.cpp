@@ -104,8 +104,9 @@ Result ProductionJob::execute(){
             QFile::remove(m_sgf + ".sgf");
         }
     }
+    bool scoreEarly = false;
     bool lastScoreEstimateStandardDeviation = false;
-    float lastScoreEstimateMean;
+    float lastScoreEstimateMean = 96;
     do {
         game.move();
         if (!game.waitForMove()) {
@@ -118,18 +119,18 @@ Result ProductionJob::execute(){
         if (lastScoreEstimateStandardDeviation && newScoreEstimateStandardDeviation) {
             if (std::abs(newScoreEstimateMean - lastScoreEstimateMean) <= m_maxScoreEstimateDisagreement) {
                 if (game.getMovesCount() >= m_move_threshold) {
-                    break; // end the game
+                    scoreEarly = true; // end the game
                 }
             }
         }
         lastScoreEstimateStandardDeviation = newScoreEstimateStandardDeviation;
         lastScoreEstimateMean = newScoreEstimateMean;
         m_boss->incMoves();
-    } while (game.nextMove() && m_state.load() == RUNNING);
+    } while (!scoreEarly && game.nextMove() && m_state.load() == RUNNING);
     switch (m_state.load()) {
     case RUNNING:
         QTextStream(stdout) << "Game has ended." << endl;
-        if (game.getScore()) {
+        if (game.getScore(scoreEarly)) {
             game.writeSgf();
             game.fixSgf(m_network, false);
             game.dumpTraining();
@@ -139,6 +140,7 @@ Result ProductionJob::execute(){
         }
         res.type(Result::File);
         res.add("file", game.getFile());
+        res.add("score", game.getResult());
         res.add("winner", game.getWinnerName());
         res.add("moves", QString::number(game.getMovesCount()));
         break;
@@ -188,6 +190,7 @@ Result ValidationJob::execute(){
 
     QString wmove = "play white ";
     QString bmove = "play black ";
+    bool scoreEarly = false;
     float scoreEstimateDisagreement;
     do {
         first.move();
@@ -205,7 +208,7 @@ Result ValidationJob::execute(){
             if (first.getScoreEstimateStandardDeviation() <= m_maxScoreEstimateStandardDeviation) {
                 if (second.getScoreEstimateStandardDeviation() <= m_maxScoreEstimateStandardDeviation) {
                     if (first.getMovesCount() >= m_move_threshold) {
-                        break; // end the game
+                        scoreEarly = true; // end the game
                     }
                 }
             }
@@ -222,19 +225,19 @@ Result ValidationJob::execute(){
             if (first.getScoreEstimateStandardDeviation() <= m_maxScoreEstimateStandardDeviation) {
                 if (second.getScoreEstimateStandardDeviation() <= m_maxScoreEstimateStandardDeviation) {
                     if (second.getMovesCount() >= m_move_threshold) {
-                        break; // end the game
+                        scoreEarly = true; // end the game
                     }
                 }
             }
         }
         second.nextMove();
-    } while (first.nextMove() && m_state.load() == RUNNING);
+    } while (!scoreEarly && first.nextMove() && m_state.load() == RUNNING);
 
     switch (m_state.load()) {
     case RUNNING:
         res.add("moves", QString::number(first.getMovesCount()));
        QTextStream(stdout) << "Game has ended." << endl;
-        if (first.getScore()) {
+        if (first.getScore(scoreEarly)) {
             res.add("score", first.getResult());
             res.add("winner", first.getWinnerName());
             first.writeSgf();

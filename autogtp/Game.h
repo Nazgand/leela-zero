@@ -38,7 +38,7 @@ public:
     bool waitForMove() { return waitReady(); }
     bool readMove();
     bool nextMove();
-    bool getScore();
+    bool getScore(bool endedEarly);
     float getScoreEstimateMean();
     float getScoreEstimateStandardDeviation();
     QString sendGtpCommandForResponse(QString cmd);
@@ -66,6 +66,8 @@ public:
     enum {
         BLACK = 0,
         WHITE = 1,
+        PANDA = 2,
+        EARLY = 3,
     };
 
 private:
@@ -82,6 +84,7 @@ private:
     QString m_fileName;
     QString m_moveDone;
     QString m_result;
+    bool m_scoreEarly;
     bool m_resignation;
     bool m_blackToMove;
     bool m_blackResigned;
