@@ -114,8 +114,7 @@ QString Game::sendGtpCommandForResponse(QString cmd) {
     if (!eatNewLine()) {
         error(Game::PROCESS_DIED);
     }
-    QString response = readBuffer;
-    return response.simplified();
+    return readBuffer;
 }
 
 void Game::checkVersion(const VersionTuple &min_version) {
