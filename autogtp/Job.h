@@ -54,6 +54,8 @@ protected:
     QString m_option;
     QString m_gpu;
     int m_moves;
+    float m_maxScoreEstimateStandardDeviation;
+    float m_maxScoreEstimateDisagreement;
     VersionTuple m_leelazMinVersion;
     Management *m_boss;
 };

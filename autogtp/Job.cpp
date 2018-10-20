@@ -48,6 +48,15 @@ void Job::init(const Order &o) {
     std::get<0>(m_leelazMinVersion) = version_list[0].toInt();
     std::get<1>(m_leelazMinVersion) = version_list[1].toInt();
     std::get<2>(m_leelazMinVersion) = version_list[2].toInt();
+    bool parse;
+    m_maxScoreEstimateStandardDeviation = o.parameters()["maxScoreEstimateStandardDeviation"].toFloat(&parse);
+    if (!parse) {
+        m_maxScoreEstimateStandardDeviation = 0.2;
+    }
+    m_maxScoreEstimateDisagreement = o.parameters()["maxScoreEstimateDisagreement"].toFloat(&parse);
+    if (!parse) {
+        m_maxScoreEstimateDisagreement = 0.2;
+    }
 
 }
 
@@ -162,8 +171,6 @@ Result ValidationJob::execute(){
 
     QString wmove = "play white ";
     QString bmove = "play black ";
-    float maxScoreEstimateStandardDeviation = 0.2;
-    float maxScoreEstimateDisagreement = 0.2;
     float scoreEstimateDisagreement;
     do {
         first.move();
@@ -177,9 +184,9 @@ Result ValidationJob::execute(){
         }
         second.setMove(bmove + first.getMove());
         scoreEstimateDisagreement = std::abs(first.getScoreEstimateMean() - second.getScoreEstimateMean());
-        if (scoreEstimateDisagreement <= maxScoreEstimateDisagreement) {
-            if (first.getScoreEstimateMean() <= maxScoreEstimateStandardDeviation) {
-                if (second.getScoreEstimateMean() <= maxScoreEstimateStandardDeviation) {
+        if (scoreEstimateDisagreement <= m_maxScoreEstimateDisagreement) {
+            if (first.getScoreEstimateMean() <= m_maxScoreEstimateStandardDeviation) {
+                if (second.getScoreEstimateMean() <= m_maxScoreEstimateStandardDeviation) {
                     //maybe end the game early
                 }
             }
@@ -193,9 +200,9 @@ Result ValidationJob::execute(){
         first.setMove(wmove + second.getMove());
         second.setMove(bmove + first.getMove());
         scoreEstimateDisagreement = std::abs(first.getScoreEstimateMean() - second.getScoreEstimateMean());
-        if (scoreEstimateDisagreement <= maxScoreEstimateDisagreement) {
-            if (first.getScoreEstimateMean() <= maxScoreEstimateStandardDeviation) {
-                if (second.getScoreEstimateMean() <= maxScoreEstimateStandardDeviation) {
+        if (scoreEstimateDisagreement <= m_maxScoreEstimateDisagreement) {
+            if (first.getScoreEstimateMean() <= m_maxScoreEstimateStandardDeviation) {
+                if (second.getScoreEstimateMean() <= m_maxScoreEstimateStandardDeviation) {
                     //maybe end the game early
                 }
             }
