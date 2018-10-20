@@ -162,6 +162,9 @@ Result ValidationJob::execute(){
 
     QString wmove = "play white ";
     QString bmove = "play black ";
+    float maxScoreEstimateStandardDeviation = 0.2;
+    float maxScoreEstimateDisagreement = 0.2;
+    float scoreEstimateDisagreement;
     do {
         first.move();
         if (!first.waitForMove()) {
@@ -173,6 +176,14 @@ Result ValidationJob::execute(){
             break;
         }
         second.setMove(bmove + first.getMove());
+        scoreEstimateDisagreement = std::abs(first.getScoreEstimateMean() - second.getScoreEstimateMean());
+        if (scoreEstimateDisagreement <= maxScoreEstimateDisagreement) {
+            if (first.getScoreEstimateMean() <= maxScoreEstimateStandardDeviation) {
+                if (second.getScoreEstimateMean() <= maxScoreEstimateStandardDeviation) {
+                    //maybe end the game early
+                }
+            }
+        }
         second.move();
         if (!second.waitForMove()) {
             return res;
@@ -180,6 +191,15 @@ Result ValidationJob::execute(){
         second.readMove();
        m_boss->incMoves();
         first.setMove(wmove + second.getMove());
+        second.setMove(bmove + first.getMove());
+        scoreEstimateDisagreement = std::abs(first.getScoreEstimateMean() - second.getScoreEstimateMean());
+        if (scoreEstimateDisagreement <= maxScoreEstimateDisagreement) {
+            if (first.getScoreEstimateMean() <= maxScoreEstimateStandardDeviation) {
+                if (second.getScoreEstimateMean() <= maxScoreEstimateStandardDeviation) {
+                    //maybe end the game early
+                }
+            }
+        }
         second.nextMove();
     } while (first.nextMove() && m_state.load() == RUNNING);
 
