@@ -57,7 +57,10 @@ void Job::init(const Order &o) {
     if (!parse) {
         m_maxScoreEstimateDisagreement = 0.2;
     }
-
+    m_move_threshold = o.parameters()["moveThreshold"].toInt(&parse);
+    if (!parse) {
+        m_move_threshold = 90;
+    }
 }
 
 ProductionJob::ProductionJob(QString gpu, Management *parent) :
@@ -101,12 +104,24 @@ Result ProductionJob::execute(){
             QFile::remove(m_sgf + ".sgf");
         }
     }
+    bool lastScoreEstimateStandardDeviation = false;
+    float lastScoreEstimateMean;
     do {
         game.move();
         if (!game.waitForMove()) {
             return res;
         }
         game.readMove();
+        // compare to score estimate of previous move rather than estimate of other network
+        const bool newScoreEstimateStandardDeviation = (game.getScoreEstimateStandardDeviation() <= m_maxScoreEstimateStandardDeviation);
+        const float newScoreEstimateMean = game.getScoreEstimateMean();
+        if (lastScoreEstimateStandardDeviation && newScoreEstimateStandardDeviation) {
+            if (std::abs(newScoreEstimateMean - lastScoreEstimateMean) <= m_maxScoreEstimateDisagreement) {
+                //maybe end the game early
+            }
+        }
+        lastScoreEstimateStandardDeviation = newScoreEstimateStandardDeviation;
+        lastScoreEstimateMean = newScoreEstimateMean;
         m_boss->incMoves();
     } while (game.nextMove() && m_state.load() == RUNNING);
     switch (m_state.load()) {
@@ -185,8 +200,8 @@ Result ValidationJob::execute(){
         second.setMove(bmove + first.getMove());
         scoreEstimateDisagreement = std::abs(first.getScoreEstimateMean() - second.getScoreEstimateMean());
         if (scoreEstimateDisagreement <= m_maxScoreEstimateDisagreement) {
-            if (first.getScoreEstimateMean() <= m_maxScoreEstimateStandardDeviation) {
-                if (second.getScoreEstimateMean() <= m_maxScoreEstimateStandardDeviation) {
+            if (first.getScoreEstimateStandardDeviation() <= m_maxScoreEstimateStandardDeviation) {
+                if (second.getScoreEstimateStandardDeviation() <= m_maxScoreEstimateStandardDeviation) {
                     //maybe end the game early
                 }
             }
@@ -198,11 +213,10 @@ Result ValidationJob::execute(){
         second.readMove();
        m_boss->incMoves();
         first.setMove(wmove + second.getMove());
-        second.setMove(bmove + first.getMove());
         scoreEstimateDisagreement = std::abs(first.getScoreEstimateMean() - second.getScoreEstimateMean());
         if (scoreEstimateDisagreement <= m_maxScoreEstimateDisagreement) {
-            if (first.getScoreEstimateMean() <= m_maxScoreEstimateStandardDeviation) {
-                if (second.getScoreEstimateMean() <= m_maxScoreEstimateStandardDeviation) {
+            if (first.getScoreEstimateStandardDeviation() <= m_maxScoreEstimateStandardDeviation) {
+                if (second.getScoreEstimateStandardDeviation() <= m_maxScoreEstimateStandardDeviation) {
                     //maybe end the game early
                 }
             }

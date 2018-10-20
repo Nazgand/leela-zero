@@ -54,6 +54,7 @@ protected:
     QString m_option;
     QString m_gpu;
     int m_moves;
+    int m_move_threshold;
     float m_maxScoreEstimateStandardDeviation;
     float m_maxScoreEstimateDisagreement;
     VersionTuple m_leelazMinVersion;
