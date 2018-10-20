@@ -117,7 +117,9 @@ Result ProductionJob::execute(){
         const float newScoreEstimateMean = game.getScoreEstimateMean();
         if (lastScoreEstimateStandardDeviation && newScoreEstimateStandardDeviation) {
             if (std::abs(newScoreEstimateMean - lastScoreEstimateMean) <= m_maxScoreEstimateDisagreement) {
-                //maybe end the game early
+                if (game.getMovesCount() >= m_move_threshold) {
+                    break; // end the game
+                }
             }
         }
         lastScoreEstimateStandardDeviation = newScoreEstimateStandardDeviation;
@@ -202,7 +204,9 @@ Result ValidationJob::execute(){
         if (scoreEstimateDisagreement <= m_maxScoreEstimateDisagreement) {
             if (first.getScoreEstimateStandardDeviation() <= m_maxScoreEstimateStandardDeviation) {
                 if (second.getScoreEstimateStandardDeviation() <= m_maxScoreEstimateStandardDeviation) {
-                    //maybe end the game early
+                    if (first.getMovesCount() >= m_move_threshold) {
+                        break; // end the game
+                    }
                 }
             }
         }
@@ -217,7 +221,9 @@ Result ValidationJob::execute(){
         if (scoreEstimateDisagreement <= m_maxScoreEstimateDisagreement) {
             if (first.getScoreEstimateStandardDeviation() <= m_maxScoreEstimateStandardDeviation) {
                 if (second.getScoreEstimateStandardDeviation() <= m_maxScoreEstimateStandardDeviation) {
-                    //maybe end the game early
+                    if (second.getMovesCount() >= m_move_threshold) {
+                        break; // end the game
+                    }
                 }
             }
         }
