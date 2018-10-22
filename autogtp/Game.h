@@ -42,6 +42,7 @@ public:
     float getScoreEstimateMean();
     float getScoreEstimateStandardDeviation();
     QString sendGtpCommandForResponse(QString cmd);
+    QString sendGtpCommandForResponseTrimmed(QString cmd);
     bool loadSgf(const QString &fileName);
     bool loadSgf(const QString &fileName, int moves);
     bool writeSgf();
