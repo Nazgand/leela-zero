@@ -98,6 +98,10 @@ bool Game::sendGtpCommand(QString cmd) {
     return false;
 }
 
+QString Game::sendGtpCommandForResponseTrimmed(QString cmd) {
+    return sendGtpCommandForResponse(cmd).remove(0,2).trimmed();
+}
+
 QString Game::sendGtpCommandForResponse(QString cmd) {
     write(qPrintable(cmd.append("\n")));
     waitForBytesWritten(-1);
@@ -303,7 +307,7 @@ bool Game::getScore(bool scoreEarly) {
         }
         m_result += " : " +  QString().setNum(winRate, 'f', 3);
     } else {
-        m_result = sendGtpCommandForResponse("final_score").remove(0,2).trimmed();
+        m_result = sendGtpCommandForResponseTrimmed("final_score");
         if (m_result[0] == 'W') {
             m_winner = QString(QStringLiteral("white"));
             m_result += " : 0.000";
@@ -326,7 +330,7 @@ bool Game::getScore(bool scoreEarly) {
 
 float Game::getScoreEstimateMean() {
     bool parse;
-    float mean = sendGtpCommandForResponse("estimate_score_mean").remove(0,2).toFloat(&parse);
+    float mean = sendGtpCommandForResponseTrimmed("estimate_score_mean").toFloat(&parse);
     if (!parse) {
         // a parsing error implies (mean == 0.0)
         error(Game::WRONG_GTP);
@@ -336,7 +340,7 @@ float Game::getScoreEstimateMean() {
 
 float Game::getScoreEstimateStandardDeviation() {
     bool parse;
-    float standard = sendGtpCommandForResponse("estimate_score_standard_deviation").remove(0,2).toFloat(&parse);
+    float standard = sendGtpCommandForResponseTrimmed("estimate_score_standard_deviation").toFloat(&parse);
     if (!parse) {
         // a parsing error implies (standard == 0.0)
         error(Game::WRONG_GTP);
